@@ -1,0 +1,4 @@
+cmake_minimum_required(VERSION 3.2)
+set(CMAKE_CXX_STANDARD 17)
+project(vector_sum_concurrency)
+add_executable(vector_sum_concurrency vector_sum_concurrency.cpp)
