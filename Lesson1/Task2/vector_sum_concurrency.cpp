@@ -95,7 +95,7 @@ int main(){
 			
 			auto end_time = std::chrono::steady_clock::now();
 			
-			time_arr.at(e).push_back(end_time - start_time);
+			time_arr.at(e).push_back(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time));
 		}
 		for (auto& n : _thread_arr) {
 			for (auto& m : n) m.join();
