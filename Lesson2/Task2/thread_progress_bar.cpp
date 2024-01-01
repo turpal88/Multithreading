@@ -6,8 +6,10 @@
 #include "windows.h"
 #include <vector>
 #include <random>
+#include <condition_variable>
 
 std::mutex m;
+
 int plus_one_more_line = 0; //прибавляем 1 к последней напечатанной строке, чтобы в конце текст программы не налазил друг на друга
 void gotoxy(int x, int y, _In_ WORD color = FOREGROUND_GREEN)
 {
@@ -52,13 +54,14 @@ void put_blue_red_symbol(int& factor, int thread_num, int rand_temp, int i) {
 }
 
 void test_func(int count_size, std::chrono::duration<double>& elapsed_time, int thread_num, int threads_count) {
-	std::lock_guard<std::mutex> lock(m);
+	std::unique_lock<std::mutex> lk_u(m);
 	int step = count_size / 20; //берем шаг в 20 символов - максимум сколько можно отрисовать в консоли в линии для для одного потока, для этого считаем step - на какой итерации рисовать символ
 	int factor = 1;
 	
 	gotoxy(30, thread_num + 2);
 
 	std::cout << std::this_thread::get_id();
+	lk_u.unlock();
 	std::random_device random_device; // Источник энтропии.
 	std::mt19937 generator(random_device()); // Генератор случайных чисел.
 	// (Здесь берется одно инициализирующее значение, можно брать больше)
@@ -69,15 +72,18 @@ void test_func(int count_size, std::chrono::duration<double>& elapsed_time, int 
 
 	int temp = 0;
 	auto start = std::chrono::steady_clock::now();
+	
 	for (int i = 0; i < count_size; i++) {
 		temp++;
 		auto end = std::chrono::steady_clock::now();
 		elapsed_time += (end - start);
 		
 		if (i >= step * factor) {
+			std::lock_guard<std::mutex> lock(m);
 			std::uniform_int_distribution<> distribution(step, step * factor); // Равномерное распределение [10, 20]
 			int rand_temp = distribution(generator); // Случайное число.
 			try {
+				
 				put_blue_red_symbol(factor, thread_num, rand_temp, i);
 			}
 			catch (std::exception& e) {
@@ -94,7 +100,7 @@ void test_func(int count_size, std::chrono::duration<double>& elapsed_time, int 
 			gotoxy(90, thread_num + 2);
 			std::cout << elapsed_time.count();
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(3));
+		std::this_thread::sleep_for(std::chrono::milliseconds(30));
 		
 	} 
 	
@@ -106,7 +112,10 @@ void thread_init(std::vector<std::thread>& thread_vec, const int& threads_count,
 	print_thread_table_columns();
 	for (int i = 0; i < threads_count; i++) print_thread_num(i);
 	for (int i = 0; i < threads_count; i++) thread_vec.push_back(std::thread(test_func, count_size, std::ref(thread_work_time_vec.at(i)), i, threads_count));
-		//print_thread_num(i);
+	
+
+
+	//print_thread_num(i);
 		
 	
 	
