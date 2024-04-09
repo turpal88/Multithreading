@@ -1,65 +1,66 @@
 ﻿#include <thread>
+#include <vector>
 #include <chrono>
 #include <iostream>
-#include "windows.h"
-const int MAX_CLIENT_COUNT = 10;
+#pragma execution_character_set("utf-8")
+#include <windows.h>
 
 
+#define MAX_CLIENT_COUNT 10
+using namespace std::chrono_literals;
+//int client_count;
+std::vector<std::thread> queue_threads;
 
-void func5(int& current_client_count, bool& is_client_action_started, bool& is_client_increasing_enough)
-{
+void client(int& client_count) {
+	bool increasing_flag = 0;
 	while (true) {
-		std::this_thread::sleep_for(std::chrono::seconds(1));
-		if (current_client_count < MAX_CLIENT_COUNT) {
-			current_client_count++;
-			if (!is_client_action_started) is_client_action_started = true;
-			std::cout << "+1 клиент. Клиентов в очереди - " + std::to_string(current_client_count) + "\n";
-		}
-		if (current_client_count == MAX_CLIENT_COUNT) {
+		if (client_count < MAX_CLIENT_COUNT){
+			increasing_flag = true;
+		std::cout << "+1 клиент в очереди. Кол-во клиентов = " << ++client_count << std::endl;
+	}
+		
+		if (client_count == MAX_CLIENT_COUNT && increasing_flag) break; else std::this_thread::sleep_for(1s);
 			
-			is_client_increasing_enough = true;
-			break;
-		} 
+		
 	}
 	
 	
+	
+
 }
-void func6(int& current_client_count, bool& is_client_action_started, bool& is_client_increasing_enough)
-{
+
+void operationist(int& client_count) {
+	bool decreasing_flag = 0;
 	while (true) {
-		std::this_thread::sleep_for(std::chrono::seconds(2));
-		if (current_client_count > 0 && is_client_action_started || is_client_increasing_enough == true) {
-			
-				current_client_count--;
-				std::cout << "-1 клиент. Клиентов в очереди - " + std::to_string(current_client_count) + "\n";
+		if (client_count > 0) {
+			decreasing_flag = true;
+			std::cout << "-1 клиент в очереди. Кол-во клиентов = " << --client_count << std::endl;
 			
 		}
-
-
-		if (current_client_count == 0 && is_client_action_started && is_client_increasing_enough == true) {
-			std::cout << "Обход клиентов завершен\n";
-			break;
-		}
+		if (client_count == 0 && decreasing_flag) break; else std::this_thread::sleep_for(2s);
+			
+		
+			
+		
+		
+		
 	}
 	
 	
+	
 }
-
-
 
 int main() {
-	SetConsoleCP(1251);// установка кодовой страницы win-cp 1251 в поток ввода
-	SetConsoleOutputCP(1251); // установка кодовой страницы win-cp 1251 в поток вывода
-	int current_client_count = 0;
-	bool is_client_operationist_actions_finished = false;
-	bool is_client_action_started = false;
-	bool is_client_increasing_enough = false;
-	std::thread t3(func5, std::ref(current_client_count), std::ref(is_client_action_started), std::ref(is_client_increasing_enough));
-	std::thread t4(func6, std::ref(current_client_count), std::ref(is_client_action_started), std::ref(is_client_increasing_enough));
+	SetConsoleCP(CP_UTF8);
+	SetConsoleOutputCP(CP_UTF8);
+
+	int client_count = 0;// MAX_CLIENT_COUNT;
 	
-		t3.join();
-		t4.join();
-	
-	
+	std::thread th1(client, std::ref(client_count));
+	std::thread th2(operationist, std::ref(client_count));
+
+	th1.join();
+	th2.join();
+
 	return 0;
 }
