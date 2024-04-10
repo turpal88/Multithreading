@@ -1,11 +1,14 @@
 ﻿#include <thread>
-#include <ratio>
-#include <chrono>
-
-#include <iostream>
-#include "windows.h"
 #include <vector>
-#include <random>
+#include <windows.h>
+#include <iostream>
+#include <chrono>
+#include <algorithm>
+#include <cstdlib>
+#include <ctime>
+#pragma execution_character_set("utf-8")
+
+using namespace std::chrono_literals;
 
 void gotoxy(int x, int y)
 {
@@ -15,118 +18,136 @@ void gotoxy(int x, int y)
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), cd);
 }
 
-//template<typename T>
-void sum_vectors(std::vector<int>& vec1, std::vector<int>& vec2, std::vector<int>& vec3, const int& _thread_count_j, int k) {
-	for (int i = k * vec1.size() / _thread_count_j; i < (k * vec1.size() / _thread_count_j + vec1.size() / _thread_count_j); i++) {
-		vec3[i] = vec1[i] + vec2[i];
-	}
+void vector_sum(std::vector<int>& vec1, std::vector<int>& vec2, std::vector<int>& vec3, 
+	int begin_index, int end_index, std::chrono::duration<double, std::milli>& fp_ms) {
+	auto start = std::chrono::steady_clock::now();
 	
-	//std::vector<int>::const_iterator it_start_vec1 = vec1.begin() + k * vec1.size() / _thread_count_j;
-	//std::vector<int>::const_iterator it_end_vec1 = it_start_vec1 + vec1.size() / _thread_count_j;
-	//std::vector<int>::const_iterator it_start_vec2 = vec2.begin() + k * vec2.size() / _thread_count_j;
-	//std::vector<int>::const_iterator it_end_vec2 = it_start_vec2 + vec2.size() / _thread_count_j;
-	//std::vector<int>::const_iterator it_start_vec3 = vec3.begin() + k * vec3.size() / _thread_count_j;
-	//std::vector<int>::const_iterator it_end_vec3 = it_start_vec3 + vec3.size() / _thread_count_j;
-	//std::vector<int>::const_iterator it2 = it_start_vec2;
-	//for (std::vector<int>::const_iterator it = it_start_vec1; it != it_end_vec1; ++it) {
-	//	*it_start_vec3 = *it + *it_start_vec2;
-		//vec3.insert(it, (*it + *it_start_vec2));
-	//	++it_start_vec2;
-	//	++it_start_vec3;
-	//}
-	//return vec3;
-}
-void test_func() {
-	for (int i = 0; i < 10; i++) {
-		std::cout << i << " ";
-	}
-	std::cout << "\n";
+	for (int i = begin_index; i < end_index; i++) vec3.push_back(vec1.at(i) + vec2.at(i));
+	auto end = std::chrono::steady_clock::now();
+	std::chrono::duration<double, std::milli> duration = end - start;
+	fp_ms += duration;
+	std::this_thread::sleep_for(1s);
+	
 }
 
-int main(){
-	SetConsoleCP(1251);// установка кодовой страницы win-cp 1251 в поток ввода
-	SetConsoleOutputCP(1251); // установка кодовой страницы win-cp 1251 в поток вывода
+
+int main() {
+	std::vector<int> el_number = {1000, 10000, 100000, 1000000};
+	std::vector<int> thread_numbers = {1,2,4,8,16};
+	std::vector<std::thread> threads;
+	std::vector<std::vector<std::thread>> threads_vector;
+	std::chrono::duration<double, std::milli> fp_ms{0s};
+	std::vector<int> vec1, vec2, vec3;
+	SetConsoleCP(CP_UTF8);
+	SetConsoleOutputCP(CP_UTF8);
+
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_GREEN);
+	
+	HWND hWnd = GetConsoleWindow();
+	RECT rc;
+	GetClientRect(hWnd, &rc);
+	int w = rc.right/10; // ширина рабочей области
+	int h = rc.bottom/10;// высота рабочей области
+
+	
+
+
+	std::cout << "Количество аппаратных ядер = " << std::thread::hardware_concurrency() << std::endl;
+
+	
+	int print_x_interval = w / el_number.size();
+	//int el_number_index = 0;
+
+	
+	//int x_coord = (el_number_index * print_x_interval) + print_x_interval / 2;
+
 	
 	
-	const std::vector<int> _thread_count{1,2,4,8,16 };
-	const std::vector<int> elements_count{1000, 10000, 100000, 1000000};
-	std::vector<std::vector<std::chrono::duration<double>>> time_arr(elements_count.size());
-	std::vector<std::vector<std::chrono::duration<double>>>::const_iterator time_arr_it = time_arr.begin();
 	
 	
-	gotoxy(40, 0);
-	std::cout << "Количество аппаратных ядер - " << std::thread::hardware_concurrency();
-	//gotoxy(0, 2);
-	int temp = 20;
-	std::for_each(elements_count.begin(), elements_count.end(), [&temp](const int& n) {
-		gotoxy(temp,2);
-		std::cout << n;
-		temp += 18;
-		});
 	
-	for (int e = 0; e < elements_count.size(); e++) {
-		std::vector<std::vector<std::thread>> _thread_arr(_thread_count.size());
-		std::vector<int> vec1(elements_count[e]);
-		std::vector<int> vec2(elements_count[e]);
-		std::vector<int> vec3(elements_count[e]);
+	for (int i = 0; i < thread_numbers.size(); i++) {
+		gotoxy(0, 4 + i);
+		std::cout << thread_numbers[i] << " потоков";
 
-		std::mt19937 gen;
-		std::mt19937 gen2;
-		std::uniform_int_distribution<int> dis(0, 100);
-		std::uniform_int_distribution<int> dis2(200, 300);
-		auto rand_num([=]() mutable {return dis(gen); });
-		auto rand_num2([=]() mutable {return dis2(gen2); });
-		std::generate(vec1.begin(), vec1.end(), rand_num);
-		
-		std::generate(vec2.begin(), vec2.end(), rand_num2);
+		for (int j = 0; j < el_number.size(); j++) {
+			gotoxy((j * print_x_interval) + print_x_interval / 2, 3);
+			std::cout << el_number[j];
+			gotoxy((j * print_x_interval) + print_x_interval / 2, 4 + i);
 
+			vec1.clear(); vec2.clear(); vec3.clear();
+			fp_ms = 0ms;
+			for (int k = 0; k < el_number.at(j); k++) {
+				vec1.push_back(rand() % 7);
+				vec2.push_back(rand() % 7);
+			}
 
+			int begin_index = 0;
+			int end_index = el_number.at(j)/thread_numbers[i];
 
-
-		
-		for (int j = 0; j < _thread_arr.size(); j++) {
-			auto start_time = std::chrono::steady_clock::now();
-			for (int k = 0; k < _thread_count[j]; k++) {
-
-				_thread_arr.at(j).push_back(std::thread(sum_vectors, std::ref(vec1), std::ref(vec2), std::ref(vec3), _thread_count[j], k));
-
-
+			for (int l = begin_index; l <= el_number.at(j) - el_number.at(j) / thread_numbers[i]; l+= end_index) {
+				threads.push_back(std::thread(vector_sum, std::ref(vec1), std::ref(vec2), std::ref(vec3),
+					l, l+end_index, std::ref(fp_ms)));
+				
+				
 			}
 			
-			auto end_time = std::chrono::steady_clock::now();
-			
-			time_arr.at(e).push_back(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time));
-		}
-		for (auto& n : _thread_arr) {
-			for (auto& m : n) m.join();
-		}
 
+			for (auto& el : threads) {
+				if (el.joinable()) el.join();
+			}
+			threads.clear();
+			std::cout << fp_ms.count();
+			//if (i == 0 && j == 0) std::cout << fp_ms.count();
+			//std::cout << "!";
 		}
-	
-	
-	temp = 4;
-	
-
-	std::for_each(_thread_count.begin(), _thread_count.end(), [&temp](const int& n) {
-		gotoxy(5, temp);
-		std::cout << n << " потоков";
-		temp+=2;
-		
-		});
-	
-	int temp1 = 18;
-	
-	for (int i = 0; i < time_arr.size(); i++) {
-		temp = 4;
-		std::for_each(time_arr[i].begin(), time_arr[i].end(), [&temp, &temp1](const std::chrono::duration<double>& n) {
-			gotoxy(temp1, temp);
-			std::cout << n.count();
-			temp += 2;
-			});
-		temp1 += 18;
 	}
+	
+	gotoxy(0, thread_numbers.size() + 4);
+	/*
+	std::for_each(el_number.begin(), el_number.end(), [&](int& n) {
+		int thread_numbers_index = 0;
+		int x_coord = (el_number_index * print_x_interval) + print_x_interval/2;
+		gotoxy(x_coord, 3);
+		std::cout << n;
+		vec1.clear();
+		vec2.clear();
+		vec3.clear();
+		for (int i = 0; i < n; i++) {
+			vec1.push_back(rand() % 7);
+			vec2.push_back(rand() % 7);
+		}
 
-	
-	
+		while (thread_numbers_index < thread_numbers.size()) {
+			
+			 //auto start = std::chrono::steady_clock::now();
+			for (int j = 0; j < thread_numbers[thread_numbers_index]; j++) {
+				int begin_index = j * n / thread_numbers[thread_numbers_index];
+		        int end_index = (j + 1) * n / thread_numbers[thread_numbers_index];
+				
+				threads.push_back(std::thread(vector_sum, std::ref(vec1), std::ref(vec2), std::ref(vec3),
+					std::ref(begin_index), std::ref(end_index)));
+			}
+			//auto end = std::chrono::steady_clock::now();
+			gotoxy(x_coord, 4 + thread_numbers_index);
+			//std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+			std::cout << (char)34;
+			threads_vector.push_back(std::move(threads));
+			threads.clear();
+			
+			++thread_numbers_index;
+
+		}
+		++el_number_index;
+
+		});
+		
+	for (auto& threads_vector_el : threads_vector) {
+		for (auto& threads_el : threads_vector_el) {
+			if (threads_el.joinable()) threads_el.join();
+		}
+	}
+		*/
+
 	return 0;
 }
