@@ -1,151 +1,249 @@
 ﻿#include <thread>
-#include<mutex>
-#include <chrono>
-#include <system_error>
-#include <iostream>
-#include "windows.h"
 #include <vector>
-#include <random>
-#include <condition_variable>
+#include <chrono>
+#include <iostream>
+#pragma execution_character_set("utf-8")
+#include <windows.h>
+#include <algorithm>
+#include <mutex>
+#include <functional>
+
+
+const int THREAD_COUNT = 10;
+const int CALC_SIZE = 10000;
+const int EXCEPTION_I = 600;
+
+using namespace std::chrono_literals;
+
+//#define ENABLE_EXCEPTION
 
 std::mutex m;
 
-int plus_one_more_line = 0; //прибавляем 1 к последней напечатанной строке, чтобы в конце текст программы не налазил друг на друга
-void gotoxy(int x, int y, _In_ WORD color = FOREGROUND_GREEN)
-{
-	COORD cd;
-	cd.X = x;
-	cd.Y = y;
-	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), cd);
-	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
-}
 
-//template<typename T>
-
-void print_thread_table_columns() {
-	gotoxy(0, 0);
-	std::cout << "Номер потока по порядку";
-	gotoxy(30, 0);
-	std::cout << "Идентификатор потока";
-	gotoxy(60, 0);
-	std::cout << "Прогресс-бар";
-	gotoxy(90, 0);
-	std::cout << "Время выполнения";
+class ProgressBar {
+private:
 	
-
-}
-void print_thread_num(const int& n) {
-	gotoxy(0, n + 2);
-	std::cout << n + 1;
-}
-
-void put_blue_red_symbol(int& factor, int thread_num, int rand_temp, int i) {
+	int calc_size;
+	bool is_main_thread_info_printed;
+	int current_thread_num;
 	
-	if (rand_temp == i) {
+public:
+	
+	ProgressBar(int calc_size) :  calc_size(calc_size) {
 		
-		throw std::exception("\nБыло брошено исключение в потоке с id = ");
+		is_main_thread_info_printed = false;
+		
 	}
-	else gotoxy(factor + 60, thread_num + 2, FOREGROUND_BLUE);
-	SetConsoleOutputCP(866);
-	std::cout << static_cast<char>(219);
-	SetConsoleOutputCP(1251);
-	factor++;
 	
-}
-
-void test_func(int count_size, std::chrono::duration<double>& elapsed_time, int thread_num, int threads_count) {
-	std::unique_lock<std::mutex> lk_u(m);
-	int step = count_size / 20; //берем шаг в 20 символов - максимум сколько можно отрисовать в консоли в линии для для одного потока, для этого считаем step - на какой итерации рисовать символ
-	int factor = 1;
-	
-	gotoxy(30, thread_num + 2);
-
-	std::cout << std::this_thread::get_id();
-	lk_u.unlock();
-	std::random_device random_device; // Источник энтропии.
-	std::mt19937 generator(random_device()); // Генератор случайных чисел.
-	// (Здесь берется одно инициализирующее значение, можно брать больше)
-
 	
 
+	void gotoxy(int x, int y, UINT16 symbol_color)
+	{
+		COORD cd;
+		cd.X = x;
+		cd.Y = y;
+		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), cd);
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), symbol_color);
+	}
+
+	void print_thread_info() {
+		this->gotoxy(1, 0, 0x0002);
+		std::cout << "Номер потока";
+		this->gotoxy(20, 0, 0x0002);
+		std::cout << "id потока";
+		this->gotoxy(50, 0, 0x0002);
+		std::cout << "Прогресс-бар";
+		this->gotoxy(80, 0, 0x0002);
+		std::cout << "Время работы";
+		this->gotoxy(0, 0, 0x0002);
+	}
+
+
+	void print_progress_bar() {
+	
+		SetConsoleOutputCP(866);
+		std::cout << static_cast<char>(219);
+		SetConsoleOutputCP(CP_UTF8);
+	}
 	
 
-	int temp = 0;
-	auto start = std::chrono::steady_clock::now();
-	
-	for (int i = 0; i < count_size; i++) {
-		temp++;
-		auto end = std::chrono::steady_clock::now();
-		elapsed_time += (end - start);
+	void digit_calc(int current_thread_num) {
 		
-		if (i >= step * factor) {
-			std::lock_guard<std::mutex> lock(m);
-			std::uniform_int_distribution<> distribution(step, step * factor); // Равномерное распределение [10, 20]
-			int rand_temp = distribution(generator); // Случайное число.
-			try {
+		if (!this->is_main_thread_info_printed) {
+			{
+				this->current_thread_num = current_thread_num;
+				{
+					std::lock_guard<std::mutex> lk(m);
+				this->gotoxy(1, current_thread_num + 1, 0x0002);
 				
-				put_blue_red_symbol(factor, thread_num, rand_temp, i);
-			}
-			catch (std::exception& e) {
-				plus_one_more_line++;
-				gotoxy(0, threads_count + plus_one_more_line, FOREGROUND_RED);
-				std::cout << e.what() << std::this_thread::get_id() << std::endl;
-				gotoxy(factor + 60, thread_num + 2, FOREGROUND_RED);
-				SetConsoleOutputCP(866);
-				std::cout << static_cast<char>(219);
-				SetConsoleOutputCP(1251);
-				factor++;
+				std::cout << current_thread_num + 1;
+				std::this_thread::sleep_for(50ms);
+				}
 				
+				{
+					std::lock_guard<std::mutex> lk(m);
+			    this->gotoxy(20, current_thread_num + 1, 0x0002);
+				
+					std::cout << std::this_thread::get_id();
+					std::this_thread::sleep_for(50ms);
+				}
+				
+				
+				
+				
+				
+				
+				is_main_thread_info_printed = true;
 			}
-			gotoxy(90, thread_num + 2);
-			std::cout << elapsed_time.count();
+			
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(30));
 		
-	} 
-	
-	
-
-}
-void thread_init(std::vector<std::thread>& thread_vec, const int& threads_count, const int& count_size, std::vector<std::chrono::duration<double>>& thread_work_time_vec) {
-	
-	print_thread_table_columns();
-	for (int i = 0; i < threads_count; i++) print_thread_num(i);
-	for (int i = 0; i < threads_count; i++) thread_vec.push_back(std::thread(test_func, count_size, std::ref(thread_work_time_vec.at(i)), i, threads_count));
-	
-
-
-	//print_thread_num(i);
 		
-	
-	
-}
+		unsigned long long res{ 0 };
+		int intermediate_res{ 0 };
+		
+		int initial_print_bar_position = 50;
+		int initial_print_time_position = 80;
+		
+		std::chrono::duration<double, std::milli> elapsed_time{ 0ms };
 
+		
+		
+		
+		
 
+		
+		while (true) {
+			
+			try {
+				//current_print_bar_thread_num = 0;
+				for (int i = intermediate_res; i < calc_size; ++i) {
+					auto start = std::chrono::steady_clock::now();
+#ifndef ENABLE_EXCEPTION
+					if (i % EXCEPTION_I == 0) {
+#endif 
+						auto end = std::chrono::steady_clock::now();
+						elapsed_time += (end - start);
+#ifdef ENABLE_EXCEPTION
+						if (i % EXCEPTION_I == 0 && i != EXCEPTION_I * 4) {
+#endif
+						
+						
+							{
+								std::lock_guard<std::mutex> lk(m);
+								this->gotoxy(initial_print_bar_position, current_thread_num + 1, 0x0003);
+								print_progress_bar();
+								std::this_thread::sleep_for(50ms);
+							}
+							
+								
+								++initial_print_bar_position;
 
+								{
+									std::lock_guard<std::mutex> lk(m);
+									this->gotoxy(initial_print_time_position, current_thread_num + 1, 0x0002);
+									std::cout << elapsed_time.count();
+									std::this_thread::sleep_for(50ms);
+								}
+								
+							}
+							
+#ifdef ENABLE_EXCEPTION
+					if (i == EXCEPTION_I*4) {
+						intermediate_res = ++i;
+						throw std::out_of_range("Попалась исключительная i");
+					}
+#endif
 
-int main(){
-	SetConsoleCP(1251);// установка кодовой страницы win-cp 1251 в поток ввода
-	SetConsoleOutputCP(1251); // установка кодовой страницы win-cp 1251 в поток вывода
-	//SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), BACKGROUND_INTENSITY);
-	const int threads_count = 10; //количество потоков
-	const int count_size = 100; //длина расчета
-	std::vector<std::thread> thread_vec;
-	std::vector<std::chrono::duration<double>> thread_work_time_vec(threads_count);
-	for (std::chrono::duration<double>& n : thread_work_time_vec) n = std::chrono::seconds(0);
-	
-	thread_init(thread_vec, threads_count, count_size, thread_work_time_vec);
-	
-	
-	try {
-		for (std::thread& n : thread_vec) n.join();
+					res += i % 2;
+					
+				}
+				break;
+			}
+			catch (std::out_of_range& e) {
+				
+				auto start = std::chrono::steady_clock::now();
+				{
+					std::lock_guard<std::mutex> lk(m);
+					this->gotoxy(initial_print_bar_position, current_thread_num + 1, 0x0004);
+					print_progress_bar();
+					std::this_thread::sleep_for(50ms);
+				}
+						
+						++initial_print_bar_position;
+				auto end = std::chrono::steady_clock::now();
+				elapsed_time += (end - start);
+				
+				{
+					std::lock_guard<std::mutex> lk(m);
+					this->gotoxy(initial_print_time_position, current_thread_num + 1, 0x0002);
+					std::cout << elapsed_time.count();
+					std::this_thread::sleep_for(50ms);
+				}
+				
+			}
+		}
+		
+		return;
+		
 	}
-	catch (const std::system_error& e) {
-		std::cout << "\n";
-		std::cout << e.code() << "\n";
-		std::cout << e.what() << "\n";
-	}
-	gotoxy(0, threads_count + plus_one_more_line + 2);
+
+
+
+};
+
+
+
+
+class Thread {
+private:
+	std::vector<std::thread> th_v;
 	
+	std::vector<ProgressBar> pb;
+	
+	int thread_count;
+	int calc_size;
+public:
+	
+	Thread(int thread_count, int calc_size) :thread_count(thread_count), calc_size(calc_size) {
+		
+		for (int i = 0; i < thread_count; i++) pb.push_back(ProgressBar(calc_size));
+		pb.at(0).print_thread_info();
+		
+	}
+	void make_count() {
+		for (int i = 0; i < thread_count; i++) {
+			
+			th_v.push_back(std::thread(&ProgressBar::digit_calc, &pb.at(i), i));
+			//if (th_v.at(i).joinable()) th_v.at(i).join();
+		}
+		for (int i = 0; i < thread_count; ++i) {
+			if (th_v.at(i).joinable()) th_v.at(i).join();
+		}
+		
+	}
+	void put_cursor_down() {
+		pb.at(0).gotoxy(0, thread_count+2, 0x0002);
+	}
+	
+
+};
+
+/*0x0001 - синий*/
+/*0x0002 - зеленый*/
+/*0x0003 - голубой*/
+/*0x0004 - красный*/
+
+int main() {
+	SetConsoleCP(CP_UTF8);
+	SetConsoleOutputCP(CP_UTF8);
+
+	
+
+	Thread th(THREAD_COUNT, CALC_SIZE);
+	th.make_count();
+	th.put_cursor_down();
+	
+
 	return 0;
 }
