@@ -80,7 +80,7 @@ class ForEach_Parallel{
 				//if(k == 0 && is_remainder_more_0) p = 0;
 				future_vector.push_back(std::async(std::launch::async, &ForEach_Parallel::make_accumulate_element, this, begin, begin + 1, f, begin, begin + 1));
 				//future_vector.push_back(std::async(std::launch::async, &ForEach_Parallel::make_accumulate_element, this, begin, begin + 1 + 2 * j + 2 * p, f, begin, begin + 1 + 2 * j + 2 * p));
-				if ((begin + 2) < end - 2) begin += 2; else break;
+				if ((begin + 2) <= end - 2) begin += 2; else break;
 					//if((begin + 2 + 2 * j + 2 * p) < end - 1) begin += 2 + 2 * j + 2 * p; else break;
 					//if(is_remainder_more_0 && p != 0) --k;
 				
