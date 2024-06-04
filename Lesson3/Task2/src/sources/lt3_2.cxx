@@ -7,12 +7,13 @@
 #include <numeric>
 #include <future>
 #include <chrono>
-#include <iterator>
+#include <algorithm>
+//#include <iterator>
 
 #pragma execution_character_set("utf-8")
 
 using namespace std::chrono_literals;
-const int VEC_SIZE = 24;
+const int VEC_SIZE = 240;
 
 void gotoxy(int x, int y)
 {
@@ -23,85 +24,93 @@ void gotoxy(int x, int y)
 
 }
 
+/*
 template<class T>
-std::vector<std::future<T>> future_vector;
-template<class T>
-std::vector<T> temp_vector;
-
-template<class It, class T>
-T accumulate_function(It begin, It end) {
-
-	return std::accumulate(begin, end, 0);
-}
-
-template<class It, class T>
-
-T make_accumulate_element(It begin, It end, T(*f)(It, It), It, It) {
-	int d = std::distance(begin, end);
+struct Sum
+{
+	T sum{ 0 };
+	void operator()(T n) { sum += n; }
 	
-	if (d == 2) return f(begin, end);
-	else {
-		//int j = (d/2 <= core_count)? 1 : (d/2)/core_count; //1 2 3 4 5
-		//int k = (d/2 <= core_count)? d%2 : (d/2)%core_count; //begin+ 1 3 5 7 9
-									// begin+ 
+	Sum<T>& operator+(const Sum<T>& rh) { this->sum += rh.sum; return this; }
+	Sum<T>& operator=(const Sum<T>& rh) { this->sum = rh.sum; return this; }
+};
+*/
 
-		//bool is_remainder_more_0 = (k > 0)? true : false;
-		//int p = (is_remainder_more_0)? 1 : 0;
-		//std::future<T> ft;
-		for (int i = 0; i < 12; ++i) {
-			//if(k == 0 && is_remainder_more_0) p = 0;
-			future_vector<T>.push_back(std::move(std::async(std::launch::async, make_accumulate_element<std::vector<T>::iterator, T>, begin, begin + 1, f, begin, begin + 1)));
-			
-				//ft = std::async(std::launch::async, make_accumulate_element<It, T>, begin, begin + 1, f, begin, begin + 1);
-		
-			
-				
-			
-			
-			//future_vector.push_back(std::async(std::launch::async, &ForEach_Parallel::make_accumulate_element, this, begin, begin + 1 + 2 * j + 2 * p, f, begin, begin + 1 + 2 * j + 2 * p));
-			
-			if ((begin + 2) <= end - 2) begin += 2; else break;
-			//if((begin + 2 + 2 * j + 2 * p) < end - 1) begin += 2 + 2 * j + 2 * p; else break;
-			//if(is_remainder_more_0 && p != 0) --k;
+/*
+template<class It, class T>
+Sum<T> accumulate_function(It begin, It end) {
+	Sum<T> s = std::for_each(begin, end, Sum<T>());
+	return s;
+}
+*/
+
+/*
+template<class It, class T>
+
+Sum<T> make_parallel_for_each(It begin, It end, Sum<T> (*f)(It, It)) {
+
+	int len = end - begin;
+	if (len < 10) {
+	Sum<T> s = std::for_each(begin, end, f);
+	return s;
+	} 
+
+	It mid = begin + len / 2;
+	std::future<Sum<T>> first_half = std::async(std::launch::async, make_parallel_for_each<It, T>, begin, mid, f);
+	Sum<T> s = make_parallel_for_each<It, Sum<T>>(mid, end, f);
+
+	Sum<T> final_sum = s + first_half.get();
+	return final_sum;
+	
+
+}
+*/
 
 
-		}
-		
-			//temp_vector<T>.push_back(ft.get());
-		
-		
-			
-		
-		
-	}
-	T sum = 0;
-	for (int i = 0; i < future_vector<T>.size(); ++i) {
-		gotoxy(21 + 2 * i, 1);
-		T temp = future_vector<T>.at(i).get();
-		std::cout << temp;
-		std::this_thread::sleep_for(10ms);
-		sum += temp;
+template <typename RandomIt, typename Func, typename T>
+T parallel_for_each(RandomIt beg, RandomIt end, Func f)
+{
+	RandomIt len = end - beg;
+	if (len < 10)
+		return f(begin, end);
 
-	}
-	return sum;
+	RandomIt mid = beg + len / 2;
+	T handle = std::async(std::launch::async,
+		parallel_for_each<RandomIt, Func>, mid, end, f);
+	T sum = parallel_for_each(beg, mid, f);
+	return sum + handle.get();
 }
 
+template<typename RandomIt, typename T>
+T accumulate_function(RandomIt begin, RandomIt end) {
+	T sum = 0;
+	std::for_each(begin, end, [&sum](RandomIt t) {
+		sum += t;
+		});
+}
 
 int main(){
 	SetConsoleCP(CP_UTF8);
 	SetConsoleOutputCP(CP_UTF8);
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 0x0002);
 
+
+	std::vector<int> v(10000, 1);
+	std::cout << "The sum is " << parallel_for_each(v.begin(), v.end(), accumulate_function) << '\n';
+
     //std::vector<int> vec1;
-	std::vector<int> vec;
-	for (int i = 0; i < VEC_SIZE; i++) vec.push_back(static_cast<int>(std::rand() / (RAND_MAX / 30)));
-	std::cout << "Исходный контейнер: ";
-	for (auto& t : vec) std::cout << t << " ";
-	std::cout << "\n";
-	//ForEach_Parallel<std::vector<int>::iterator, int> fep;
-	std::cout << "Суммы пар элементов: ";
+	//std::vector<int> vec;
 	
-		make_accumulate_element(vec.begin(), vec.end(), accumulate_function<std::vector<int>::iterator, int>, vec.begin(), vec.end());
+	//for (int i = 0; i < VEC_SIZE; i++) vec.push_back(static_cast<int>(std::rand() / (RAND_MAX / 30)));
+	
+	//auto s = make_parallel_for_each<std::vector<int>::iterator, int>(vec.begin(), vec.end(), _accumulate_function);
+	//std::cout << "Исходный контейнер: ";
+	//for (auto& t : vec) std::cout << t << " ";
+	//std::cout << "\n";
+	//ForEach_Parallel<std::vector<int>::iterator, int> fep;
+	//std::cout << "Суммы пар элементов: ";
+	
+		//make_accumulate_element(vec.begin(), vec.end(), accumulate_function<std::vector<int>::iterator, int>, vec.begin(), vec.end());
 	
 	
 		
