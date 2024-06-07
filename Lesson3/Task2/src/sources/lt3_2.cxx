@@ -1,25 +1,13 @@
-
-
 #include <vector>
 #include <iostream>
-
-//#include <numeric>
-
-
-
-
-//#include <iterator>
-
 #include <for_each_parallel.h>
 #include <accumulate_function.h>
 
-
-
-
-
-
-
 const int VEC_SIZE = 24;
+
+#define USING_SIMPLE_FUNCTION
+
+
 
 int main(){
 	SetConsoleCP(CP_UTF8);
@@ -34,11 +22,14 @@ int main(){
 	std::cout << "Суммы пар элементов: " << "\n";
 	
 
+#ifdef USING_SIMPLE_FUNCTION
+     parallel_for_each(vec.begin(), vec.end(), accumulate_function<std::vector<int>::iterator, int>);
+#else
 
-	parallel_for_each(vec.begin(), vec.end(), accumulate_function<std::vector<int>::iterator, int>);
-	//AccumulateFunction<std::vector<int>::iterator, int> af;
+	AccumulateFunction<std::vector<int>::iterator, int> af;
 	//AccumulateFunction<std::vector<int>::iterator, int>* ref_af = &af;
-	//parallel_for_each(vec.begin(), vec.end(), ref_af);
+	parallel_for_each(vec.begin(), vec.end(), af);
+#endif
 
 	std::cout << "\n";
 	
