@@ -2,7 +2,6 @@
 #include <algorithm>
 
 
-#pragma execution_character_set("utf-8")
 
 template <typename RandomIt, typename Func>
 void parallel_for_each(RandomIt beg, RandomIt end, Func func) {
@@ -11,7 +10,7 @@ void parallel_for_each(RandomIt beg, RandomIt end, Func func) {
 	//T result = 0;
 	int len = end - beg;
 	if (len < 3) {
-		std::for_each(beg, end, func);
+		std::for_each(beg, end, *func);
 		return;
 	}
 		

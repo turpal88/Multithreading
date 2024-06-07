@@ -1,6 +1,4 @@
 #include <vector>
-#include <windows.h>
-#include <iostream>
 #include <for_each_parallel.h>
 #include <multiply_function.h>
 
@@ -20,19 +18,22 @@ int main(){
 	std::cout << "Исходный контейнер: ";
 	for (auto& t : vec) std::cout << t << " ";
 	std::cout << "\n";
+	std::cout << "Модифицированные значения: ";
 	
-
 #ifdef USING_SIMPLE_FUNCTION
-     parallel_for_each(vec.begin(), vec.end(), multiply_function<std::vector<int>::iterator>);
+	void(*_multiply_function)(int) = multiply_function<int>;
+     parallel_for_each(vec.begin(), vec.end(), _multiply_function);
 #else
 
-	MultiplyFunction<std::vector<int>::iterator, int> af;
-	//AccumulateFunction<std::vector<int>::iterator, int>* ref_af = &af;
-	parallel_for_each(vec.begin(), vec.end(), af);
+	MultiplyFunction<int> af;
+	//AccumulateFunction<int>* ref_af = &af;
+	MultiplyFunction<int>* ft = &af;
+	parallel_for_each(vec.begin(), vec.end(), &MultiplyFunction<int>{});
 #endif
 
-	std::cout << "Новый контейнер: " << "\n";
-	for (auto& t : vec) std::cout << t << " ";
+	
+	//std::cout << "Новый контейнер: ";
+	//for (auto& t : vec) std::cout << t << " ";
 	std::cout << "\n";
 	
 
