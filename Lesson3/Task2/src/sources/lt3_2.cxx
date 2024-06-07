@@ -1,64 +1,25 @@
 
-#include <windows.h>
+
 #include <vector>
-#include <cstdlib>
-#include <iostream>
-#include <numeric>
-#include <future>
-#include <chrono>
-#include <algorithm>
-#include <mutex>
+
+
+//#include <numeric>
+
+
+
+
 //#include <iterator>
+
+#include <for_each_parallel.h>
+#include <accumulate_function.h>
+
+
+
 
 #pragma execution_character_set("utf-8")
 
-using namespace std::chrono_literals;
+
 const int VEC_SIZE = 24;
-std::mutex m;
-
-void gotoxy(int x, int y)
-{
-	COORD cd;
-	cd.X = x;
-	cd.Y = y;
-	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), cd);
-
-}
-
-
-template <typename RandomIt, typename T>
-T parallel_for_each(RandomIt beg, RandomIt end, T(*f)(RandomIt, RandomIt))
-{
-	int len = end - beg;
-	
-	
-	if (len < 3)
-		return f(beg, end);
-
-	RandomIt mid = beg + len / 2;
-	std::future<T> handle = std::async(std::launch::async,
-		parallel_for_each<RandomIt, T>, mid, end, f);
-	T sum = parallel_for_each(beg, mid, f);
-	return sum + handle.get();
-}
-
-template<typename RandomIt, typename T>
-T accumulate_function(RandomIt begin, RandomIt end) {
-	static int i = 1;
-	T sum = 0;
-	std::lock_guard<std::mutex> lk(m);
-	std::for_each(begin, end, [&sum](T t) {
-		sum += t;
-		});
-	gotoxy(21, i);
-	std::cout << "Сумма значений ";
-	if ((end - begin) < 2) std::cout << *begin << " = " << sum;
-	else std::cout << *begin << " + " << *(end - 1) << " = " << sum;
-	++i;
-	std::this_thread::sleep_for(500ms);
-	return sum;
-}
-
 
 int main(){
 	SetConsoleCP(CP_UTF8);
@@ -70,11 +31,17 @@ int main(){
 	std::cout << "Исходный контейнер: ";
 	for (auto& t : vec) std::cout << t << " ";
 	std::cout << "\n";
-	std::cout << "Суммы пар элементов: ";
+	std::cout << "Суммы пар элементов: " << "\n";
 	
-	int result = parallel_for_each(vec.begin(), vec.end(), accumulate_function<std::vector<int>::iterator, int>);
+
+
+	parallel_for_each(vec.begin(), vec.end(), accumulate_function<std::vector<int>::iterator, int>);
+	//AccumulateFunction<std::vector<int>::iterator, int> af;
+	//AccumulateFunction<std::vector<int>::iterator, int>* ref_af = &af;
+	//parallel_for_each(vec.begin(), vec.end(), &AccumulateFunction<std::vector<int>::iterator, int>());
+
 	std::cout << "\n";
-	std::cout << "The sum is " << result << '\n';
+	
 
     
 system("pause");
