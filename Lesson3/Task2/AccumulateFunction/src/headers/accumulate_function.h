@@ -2,20 +2,12 @@
 #include <windows.h>
 //#include <cstdlib>
 #include <mutex>
-#include <iostream>
+
 #include <chrono>
 
 using namespace std::chrono_literals;
 std::mutex m;
 
-void gotoxy(int x, int y)
-{
-	COORD cd;
-	cd.X = x;
-	cd.Y = y;
-	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), cd);
-
-}
 
 template<typename RandomIt, typename T>
 class AccumulateFunction {
@@ -35,6 +27,7 @@ public:
 	}
 
 };
+
 
 
 template<typename RandomIt, typename T>

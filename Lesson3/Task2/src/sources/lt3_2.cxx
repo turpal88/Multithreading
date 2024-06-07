@@ -1,7 +1,7 @@
 
 
 #include <vector>
-
+#include <iostream>
 
 //#include <numeric>
 
@@ -16,7 +16,7 @@
 
 
 
-#pragma execution_character_set("utf-8")
+
 
 
 const int VEC_SIZE = 24;
@@ -38,7 +38,7 @@ int main(){
 	parallel_for_each(vec.begin(), vec.end(), accumulate_function<std::vector<int>::iterator, int>);
 	//AccumulateFunction<std::vector<int>::iterator, int> af;
 	//AccumulateFunction<std::vector<int>::iterator, int>* ref_af = &af;
-	//parallel_for_each(vec.begin(), vec.end(), &AccumulateFunction<std::vector<int>::iterator, int>());
+	//parallel_for_each(vec.begin(), vec.end(), ref_af);
 
 	std::cout << "\n";
 	
