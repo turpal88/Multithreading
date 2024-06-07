@@ -1,7 +1,8 @@
 #include <vector>
+#include <windows.h>
 #include <iostream>
 #include <for_each_parallel.h>
-#include <accumulate_function.h>
+#include <multiply_function.h>
 
 const int VEC_SIZE = 24;
 
@@ -19,18 +20,19 @@ int main(){
 	std::cout << "Исходный контейнер: ";
 	for (auto& t : vec) std::cout << t << " ";
 	std::cout << "\n";
-	std::cout << "Суммы пар элементов: " << "\n";
 	
 
 #ifdef USING_SIMPLE_FUNCTION
-     parallel_for_each(vec.begin(), vec.end(), accumulate_function<std::vector<int>::iterator, int>);
+     parallel_for_each(vec.begin(), vec.end(), multiply_function<std::vector<int>::iterator>);
 #else
 
-	AccumulateFunction<std::vector<int>::iterator, int> af;
+	MultiplyFunction<std::vector<int>::iterator, int> af;
 	//AccumulateFunction<std::vector<int>::iterator, int>* ref_af = &af;
 	parallel_for_each(vec.begin(), vec.end(), af);
 #endif
 
+	std::cout << "Новый контейнер: " << "\n";
+	for (auto& t : vec) std::cout << t << " ";
 	std::cout << "\n";
 	
 
