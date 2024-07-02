@@ -1,0 +1,5 @@
+FROM ubuntu:16.04
+COPY src /usr/src/my_first_programm/src
+WORKDIR /usr/src/my_first_programm
+RUN apt-get update && apt-get install -y gcc build-essential nano
+CMD cd src && g++ main.cpp -o main && ./main
