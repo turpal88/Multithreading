@@ -1,0 +1,14 @@
+FROM ubuntu:latest
+COPY Project /usr/src/thread_safety_queue
+WORKDIR /usr/src/thread_safety_queue
+RUN apt-get update && apt-get install -y gcc cmake build-essential
+CMD cmake -B build && cmake --build build --clean-first --target install && cd install && export LD_LIBRARY_PATH=/usr/src/thread_safety_queue/install/ && ./main 
+
+
+
+
+
+
+
+
+
